@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agentia — Connexion</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f4f2;min-height:100vh}
+
+/* LOGIN */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.login-card{background:white;border-radius:20px;padding:40px;width:100%;max-width:380px;box-shadow:0 2px 40px rgba(0,0,0,.08)}
+.login-logo{width:60px;height:60px;border-radius:14px;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:white;margin:0 auto 16px}
+.login-title{font-size:20px;font-weight:700;color:#111;text-align:center;margin-bottom:4px}
+.login-sub{font-size:14px;color:#888;text-align:center;margin-bottom:28px}
+.field-label{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:5px;margin-top:14px}
+.field-input{width:100%;padding:12px 16px;border:1.5px solid #e8e8e8;border-radius:12px;font-size:14px;color:#111;outline:none;transition:border .15s;background:#fafafa;font-family:inherit}
+.field-input:focus{border-color:#185FA5;background:white}
+.login-btn{width:100%;padding:14px;background:#185FA5;color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;margin-top:20px;transition:all .2s;font-family:inherit}
+.login-btn:hover{background:#0f4f8a}
+.login-btn:disabled{opacity:.5;cursor:not-allowed}
+.login-error{background:#fff0f0;border:1px solid #fcc;border-radius:10px;padding:10px 14px;font-size:13px;color:#c00;margin-top:12px;display:none}
+.login-security{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#bbb;margin-top:16px}
+
+/* APP */
+#app-page{display:none;min-height:100vh;flex-direction:column}
+.app-header{background:#185FA5;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.app-brand{display:flex;align-items:center;gap:10px}
+.app-av{width:34px;height:34px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0}
+.app-name{font-size:14px;font-weight:600;color:white}
+.app-sub{font-size:11px;color:rgba(255,255,255,.7)}
+.app-right{display:flex;align-items:center;gap:10px}
+.role-badge{background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px;font-size:11px;color:white}
+.logout-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:white;border-radius:20px;padding:5px 14px;font-size:12px;cursor:pointer;font-family:inherit}
+.logout-btn:hover{background:rgba(255,255,255,.2)}
+
+/* TABS admin */
+.tabs-bar{display:flex;background:white;border-bottom:1px solid #e8e8e8;padding:0 20px}
+.tab-btn{padding:14px 20px;font-size:14px;border:none;background:transparent;color:#888;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;transition:all .15s}
+.tab-btn.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500}
+
+/* AGENT */
+.agent-wrap{max-width:680px;margin:0 auto;padding:20px;flex:1}
+.search-hero{text-align:center;padding:20px 0 28px}
+.search-hero h2{font-size:18px;font-weight:600;color:#111;margin-bottom:4px}
+.search-hero p{font-size:13px;color:#888}
+.search-box{position:relative;max-width:560px;margin:20px auto 0}
+.search-box input{width:100%;padding:14px 52px 14px 20px;border:1.5px solid #e8e8e8;border-radius:28px;font-size:15px;color:#111;outline:none;background:#fafafa;font-family:inherit;transition:all .15s}
+.search-box input:focus{border-color:#185FA5;background:white}
+.search-go{position:absolute;right:7px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:#185FA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.search-go svg{width:14px;height:14px;fill:white}
+.msgs{display:flex;flex-direction:column;gap:14px;max-width:680px;margin:0 auto;padding:0 20px 20px}
+.msg{display:flex;gap:8px;align-items:flex-start}
+.msg.user{flex-direction:row-reverse}
+.mav{width:28px;height:28px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#185FA5;flex-shrink:0}
+.bubble{max-width:80%;font-size:14px;line-height:1.7}
+.msg.user .bubble{background:#185FA5;color:white;padding:10px 16px;border-radius:16px;border-bottom-right-radius:3px}
+.msg.bot .bubble{background:white;border:1px solid #e8e8e8;padding:12px 16px;border-radius:16px;border-bottom-left-radius:3px;color:#111}
+.reco-card{background:white;border:1px solid #dceaf5;border-radius:16px;border-bottom-left-radius:3px;padding:14px 16px;max-width:85%}
+.reco-tag{font-size:10px;font-weight:600;color:#065f46;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.reco-body{font-size:14px;color:#111;line-height:1.75}
+.reco-say{border-left:3px solid #185FA5;padding:6px 12px;font-style:italic;color:#666;font-size:13px;margin-top:8px;background:#EFF6FF;border-radius:0 8px 8px 0}
+.typing{display:flex;gap:4px;padding:10px 16px;background:white;border:1px solid #e8e8e8;border-radius:16px;border-bottom-left-radius:3px}
+.typing span{width:6px;height:6px;border-radius:50%;background:#bbb;animation:b 1.2s infinite}
+.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+.conv-bar{background:white;border-top:1px solid #e8e8e8;padding:12px 20px;position:sticky;bottom:0}
+.conv-inner{max-width:680px;margin:0 auto;display:flex;gap:8px}
+.conv-inner input{flex:1;padding:10px 16px;border:1.5px solid #e8e8e8;border-radius:24px;font-size:14px;color:#111;outline:none;background:#fafafa;font-family:inherit}
+.conv-inner input:focus{border-color:#185FA5;background:white}
+.conv-send{width:40px;height:40px;border-radius:50%;background:#185FA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.conv-send svg{width:14px;height:14px;fill:white}
+
+/* CATALOGUE ADMIN */
+.cat-wrap{max-width:900px;margin:0 auto;padding:20px}
+.cat-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.cat-search{flex:1;padding:9px 14px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:14px;color:#111;outline:none;font-family:inherit;background:#fafafa}
+.cat-search:focus{border-color:#185FA5}
+.add-btn{padding:9px 20px;background:#185FA5;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.add-btn:hover{background:#0f4f8a}
+.cat-table{background:white;border-radius:14px;overflow:hidden;border:1px solid #e8e8e8}
+.cat-thead{display:grid;grid-template-columns:100px 1fr 80px 80px;padding:12px 16px;background:#f9f9f9;border-bottom:1px solid #e8e8e8;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px}
+.cat-row{display:grid;grid-template-columns:100px 1fr 80px 80px;padding:12px 16px;border-bottom:1px solid #f0f0f0;align-items:center;transition:background .1s}
+.cat-row:last-child{border-bottom:none}
+.cat-row:hover{background:#fafafa}
+.cat-ref{font-size:12px;color:#888;font-family:monospace}
+.cat-name{font-size:13px;font-weight:500;color:#111}
+.cat-desc{font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-price{font-size:13px;font-weight:600;color:#111}
+.cat-actions{display:flex;gap:6px;justify-content:flex-end}
+.row-btn{width:28px;height:28px;border-radius:7px;border:1px solid #e8e8e8;background:transparent;cursor:pointer;font-size:13px;transition:all .1s;display:flex;align-items:center;justify-content:center}
+.row-btn:hover{background:#f0f0f0}
+.row-btn.del:hover{background:#fff0f0;border-color:#fcc}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-bg.open{display:flex}
+.modal{background:white;border-radius:20px;padding:28px;width:100%;max-width:440px}
+.modal-title{font-size:16px;font-weight:700;color:#111;margin-bottom:20px}
+.modal input,.modal textarea{width:100%;padding:10px 14px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:14px;color:#111;outline:none;margin-bottom:12px;font-family:inherit;background:#fafafa}
+.modal input:focus,.modal textarea:focus{border-color:#185FA5;background:white}
+.modal textarea{resize:vertical;min-height:80px}
+.modal-actions{display:flex;gap:8px;margin-top:4px}
+.modal-save{flex:1;padding:11px;background:#185FA5;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.modal-save:hover{background:#0f4f8a}
+.modal-cancel{padding:11px 18px;border:1.5px solid #e8e8e8;background:transparent;color:#888;border-radius:10px;font-size:14px;cursor:pointer;font-family:inherit}
+.modal-cancel:hover{background:#f5f5f5}
+
+/* CREDITS */
+.credits-bar{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border-radius:20px;padding:4px 12px}
+.credit-dot{width:6px;height:6px;border-radius:50%;background:#4ade80}
+.credit-num{font-size:11px;color:white;font-weight:500}
+.recharge-banner{background:#fffbeb;border-bottom:1px solid #fde68a;padding:12px 20px;display:none;align-items:center;justify-content:space-between;font-size:13px;color:#92400e}
+.recharge-btn{padding:6px 14px;background:#d97706;color:white;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+
+.empty-state{text-align:center;padding:48px 20px;color:#888;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-logo" id="login-logo">A</div>
+    <div class="login-title" id="login-title">Agentia</div>
+    <div class="login-sub">Votre expert catalogue IA</div>
+    <label class="field-label">Adresse email</label>
+    <input class="field-input" type="email" id="email" placeholder="votre@email.fr" onkeydown="if(event.key==='Enter')login()">
+    <label class="field-label">Mot de passe</label>
+    <input class="field-input" type="password" id="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+    <button class="login-btn" id="login-btn" onclick="login()">Accéder à mon agent</button>
+    <div class="login-error" id="login-error">Email ou mot de passe incorrect.</div>
+    <div class="login-security">🔒 Accès sécurisé — données confidentielles</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-page">
+  <div class="app-header">
+    <div class="app-brand">
+      <div class="app-av" id="app-av">A</div>
+      <div>
+        <div class="app-name" id="app-name">Agentia</div>
+        <div class="app-sub" id="app-sub">Expert catalogue</div>
+      </div>
+    </div>
+    <div class="app-right">
+      <div class="credits-bar" id="credits-bar">
+        <div class="credit-dot" id="credit-dot"></div>
+        <div class="credit-num" id="credit-num">—</div>
+      </div>
+      <div class="role-badge" id="role-badge">commercial</div>
+      <button class="logout-btn" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="recharge-banner" id="recharge-banner">
+    ⚠️ Il vous reste peu de crédits. Contactez votre administrateur pour recharger.
+  </div>
+
+  <!-- TABS (admin seulement) -->
+  <div class="tabs-bar" id="tabs-bar" style="display:none">
+    <button class="tab-btn active" id="tab-agent" onclick="showTab('agent')">Mon agent</button>
+    <button class="tab-btn" id="tab-catalogue" onclick="showTab('catalogue')">Mon catalogue</button>
+  </div>
+
+  <!-- AGENT -->
+  <div id="view-agent">
+    <div class="agent-wrap">
+      <div class="search-hero" id="search-hero">
+        <h2 id="hero-title">Votre expert catalogue</h2>
+        <p>Décrivez le besoin du client — je pose 2 questions puis je recommande.</p>
+        <div class="search-box">
+          <input id="search-q" placeholder="Ex : mon client veut percer du béton armé..." onkeydown="if(event.key==='Enter')startSearch()">
+          <button class="search-go" onclick="startSearch()">
+            <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="msgs" id="msgs" style="display:none"></div>
+    <div class="conv-bar" id="conv-bar" style="display:none">
+      <div class="conv-inner">
+        <input id="conv-q" placeholder="Répondez ou posez une autre question..." onkeydown="if(event.key==='Enter')sendConv()">
+        <button class="conv-send" onclick="sendConv()">
+          <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CATALOGUE (admin) -->
+  <div id="view-catalogue" style="display:none">
+    <div class="cat-wrap">
+      <div class="cat-toolbar">
+        <input class="cat-search" placeholder="Rechercher..." id="cat-search" oninput="renderCat()">
+        <button class="add-btn" onclick="openModal()">+ Ajouter</button>
+      </div>
+      <div class="cat-table">
+        <div class="cat-thead">
+          <div>Référence</div>
+          <div>Nom · Description</div>
+          <div>Prix</div>
+          <div></div>
+        </div>
+        <div id="cat-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Ajouter un produit</div>
+    <input id="m-ref" placeholder="Référence (ex: REF-101)">
+    <input id="m-name" placeholder="Nom du produit *">
+    <input id="m-price" placeholder="Prix (ex: 189€)">
+    <textarea id="m-desc" placeholder="Description — usage, matériaux, caractéristiques..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">Annuler</button>
+      <button class="modal-save" onclick="saveProduct()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://khoniuxkmlfxldnyifsr.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtob25pdXhrbWxmeGxkbnlpZnNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNTg5MzQsImV4cCI6MjA5MTczNDkzNH0.o1XSSEkIbGTFTe-pwe0GOAJsfxysBmdspwWYoMIwJDI';
+const ANTHROPIC_KEY = 'REMPLACE_PAR_TA_CLE_ANTHROPIC';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+let currentClient = null;
+let catalogue = [];
+let chatHistory = [];
+let editId = null;
+let credits = 0;
+
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const pwd = document.getElementById('password').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Connexion...';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) {
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Accéder à mon agent';
+    return;
+  }
+  currentUser = data.user;
+  await loadProfile();
+}
+
+async function loadProfile() {
+  const { data: profile } = await sb.from('users')
+    .select('*, clients(*)')
+    .eq('auth_id', currentUser.id)
+    .single();
+  if (!profile) { await logout(); return; }
+  currentProfile = profile;
+  currentClient = profile.clients;
+  await loadCredits();
+  await loadCatalogue();
+  showApp();
+}
+
+async function loadCredits() {
+  const { data } = await sb.from('credits')
+    .select('solde')
+    .eq('client_id', currentClient.id)
+    .single();
+  credits = data ? data.solde : 0;
+  updateCreditsUI();
+}
+
+function updateCreditsUI() {
+  document.getElementById('credit-num').textContent = credits + ' crédits';
+  const dot = document.getElementById('credit-dot');
+  const banner = document.getElementById('recharge-banner');
+  if (credits <= 0) { dot.style.background = '#f87171'; banner.style.display = 'flex'; }
+  else if (credits <= 200) { dot.style.background = '#fbbf24'; banner.style.display = 'flex'; }
+  else { dot.style.background = '#4ade80'; banner.style.display = 'none'; }
+}
+
+async function loadCatalogue() {
+  const { data } = await sb.from('catalogue')
+    .select('*')
+    .eq('client_id', currentClient.id)
+    .order('created_at');
+  catalogue = data || [];
+}
+
+function showApp() {
+  document.getElementById('login-page').style.display = 'none';
+  const app = document.getElementById('app-page');
+  app.style.display = 'flex';
+  const initials = currentClient.nom.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('app-av').textContent = initials;
+  document.getElementById('app-name').textContent = currentClient.nom;
+  document.getElementById('app-sub').textContent = catalogue.length + ' références';
+  document.getElementById('hero-title').textContent = currentClient.nom;
+  document.getElementById('app-header') && (document.getElementById('app-header').style.background = currentClient.couleur || '#185FA5');
+  document.getElementById('role-badge').textContent = currentProfile.role;
+  if (currentProfile.role === 'admin' || currentProfile.role === 'superadmin') {
+    document.getElementById('tabs-bar').style.display = 'flex';
+    renderCat();
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function showTab(tab) {
+  document.getElementById('view-agent').style.display = tab === 'agent' ? 'block' : 'none';
+  document.getElementById('view-catalogue').style.display = tab === 'catalogue' ? 'block' : 'none';
+  document.getElementById('tab-agent').classList.toggle('active', tab === 'agent');
+  document.getElementById('tab-catalogue').classList.toggle('active', tab === 'catalogue');
+}
+
+function buildSystemPrompt() {
+  const catText = catalogue.map(p => `${p.ref||''}|${p.nom}|${p.prix||''}|${p.description||''}`).join('\n');
+  return `Tu es l'expert produit de ${currentClient.nom}.
+
+CATALOGUE :
+${catText || 'Catalogue vide — demandez à l\'administrateur d\'ajouter des produits.'}
+
+RÈGLE ABSOLUE — QUALIFICATION EN 2 ÉTAPES :
+Avant toute recommandation, pose exactement 2 questions. Ni 1, ni 3. Exactement 2.
+
+ÉTAPE 1 : Identifie ce qui manque. Pose UNE question technique (matériau, dimension, fréquence, environnement). Commence par "[Question 1/2]"
+
+ÉTAPE 2 : Pose UNE question sur la contrainte principale (budget, fréquence d'usage, niveau utilisateur). Commence par "[Question 2/2]"
+
+ÉTAPE 3 : Avec 2 réponses reçues, donne UNE recommandation :
+- Référence et prix
+- Pourquoi c'est LE bon choix pour CE client (2 lignes max)
+- La phrase exacte à dire au client entre guillemets
+- 1 produit complémentaire si utile
+
+INTERDIT : recommander avant 2 questions. INTERDIT : 3ème question. Si 2 réponses reçues → recommander obligatoirement.
+Style : naturel, direct, expert. Pas de liste à puces.`;
+}
+
+async function startSearch() {
+  const q = document.getElementById('search-q').value.trim();
+  if (!q || credits <= 0) return;
+  document.getElementById('search-hero').style.display = 'none';
+  document.getElementById('msgs').style.display = 'flex';
+  document.getElementById('conv-bar').style.display = 'block';
+  chatHistory = [];
+  document.getElementById('msgs').innerHTML = '';
+  await sendMessage(q);
+}
+
+async function sendConv() {
+  const q = document.getElementById('conv-q').value.trim();
+  if (!q || credits <= 0) return;
+  document.getElementById('conv-q').value = '';
+  await sendMessage(q);
+}
+
+async function sendMessage(text) {
+  if (credits <= 0) return;
+  addUserMsg(text);
+  chatHistory.push({ role: 'user', content: text });
+  showTyping();
+  credits--;
+  await sb.from('credits').update({ solde: credits }).eq('client_id', currentClient.id);
+  updateCreditsUI();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 700, system: buildSystemPrompt(), messages: chatHistory })
+    });
+    const data = await res.json();
+    const reply = data.content.map(c => c.text || '').join('');
+    removeTyping();
+    addBotMsg(reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch(e) {
+    removeTyping();
+    addBotMsg('Erreur de connexion. Réessaie.');
+    credits++;
+    await sb.from('credits').update({ solde: credits }).eq('client_id', currentClient.id);
+    updateCreditsUI();
+  }
+}
+
+function fmt(t) {
+  return t
+    .replace(/\[Question (1|2)\/2\]/g, '<div style="font-size:10px;font-weight:700;color:#185FA5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Question $1 / 2</div>')
+    .replace(/"([^"]{10,}?)"/g, '<div style="border-left:3px solid #185FA5;padding:6px 12px;font-style:italic;color:#666;font-size:13px;margin:8px 0;background:#EFF6FF;border-radius:0 8px 8px 0">"$1"</div>')
+    .replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+}
+
+function addUserMsg(text) {
+  const d = document.createElement('div');
+  d.className = 'msg user';
+  d.innerHTML = `<div class="bubble">${text}</div>`;
+  document.getElementById('msgs').appendChild(d);
+  sc();
+}
+
+function addBotMsg(text) {
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+  const init = currentClient ? currentClient.nom.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'IA';
+  const isQ = text.includes('[Question');
+  if (isQ) {
+    d.innerHTML = `<div class="mav">${init}</div><div style="max-width:85%"><div style="background:white;border:1px solid #dceaf5;border-radius:16px;border-bottom-left-radius:3px;padding:12px 16px;font-size:14px;color:#111;line-height:1.7">${fmt(text)}</div></div>`;
+  } else {
+    d.innerHTML = `<div class="mav">${init}</div><div class="reco-card"><div class="reco-tag"><span style="background:#d1fae5;color:#065f46;width:16px;height:16px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px">✓</span>Recommandation</div><div class="reco-body">${fmt(text)}</div></div>`;
+  }
+  document.getElementById('msgs').appendChild(d);
+  sc();
+}
+
+function showTyping() {
+  const d = document.createElement('div');
+  d.className = 'msg bot'; d.id = 'typ';
+  const init = currentClient ? currentClient.nom.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() : 'IA';
+  d.innerHTML = `<div class="mav">${init}</div><div class="typing"><span></span><span></span><span></span></div>`;
+  document.getElementById('msgs').appendChild(d);
+  sc();
+}
+
+function removeTyping() { const t = document.getElementById('typ'); if (t) t.remove(); }
+function sc() { const m = document.getElementById('msgs'); if(m) m.scrollTop = m.scrollHeight; }
+
+function renderCat() {
+  const q = (document.getElementById('cat-search')?.value || '').toLowerCase();
+  const filtered = catalogue.filter(p =>
+    !q || (p.nom||'').toLowerCase().includes(q) || (p.ref||'').toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q)
+  );
+  const list = document.getElementById('cat-list');
+  if (!list) return;
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state">Aucun produit. Cliquez sur "+ Ajouter" pour commencer.</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(p => `
+    <div class="cat-row">
+      <div class="cat-ref">${p.ref || '—'}</div>
+      <div style="overflow:hidden;padding-right:8px">
+        <div class="cat-name">${p.nom}</div>
+        <div class="cat-desc">${p.description || ''}</div>
+      </div>
+      <div class="cat-price">${p.prix || '—'}</div>
+      <div class="cat-actions">
+        <button class="row-btn" onclick="openModal('${p.id}')">✏️</button>
+        <button class="row-btn del" onclick="deleteProduct('${p.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openModal(id = null) {
+  editId = id;
+  document.getElementById('modal-title').textContent = id ? 'Modifier le produit' : 'Ajouter un produit';
+  if (id) {
+    const p = catalogue.find(x => x.id === id);
+    document.getElementById('m-ref').value = p.ref || '';
+    document.getElementById('m-name').value = p.nom || '';
+    document.getElementById('m-price').value = p.prix || '';
+    document.getElementById('m-desc').value = p.description || '';
+  } else {
+    document.getElementById('m-ref').value = '';
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-price').value = '';
+    document.getElementById('m-desc').value = '';
+  }
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+async function saveProduct() {
+  const nom = document.getElementById('m-name').value.trim();
+  if (!nom) { document.getElementById('m-name').focus(); return; }
+  const payload = {
+    client_id: currentClient.id,
+    ref: document.getElementById('m-ref').value.trim(),
+    nom,
+    prix: document.getElementById('m-price').value.trim(),
+    description: document.getElementById('m-desc').value.trim()
+  };
+  if (editId) {
+    await sb.from('catalogue').update(payload).eq('id', editId);
+  } else {
+    await sb.from('catalogue').insert(payload);
+  }
+  await loadCatalogue();
+  renderCat();
+  document.getElementById('app-sub').textContent = catalogue.length + ' références';
+  closeModal();
+}
+
+async function deleteProduct(id) {
+  if (!confirm('Supprimer cette référence ?')) return;
+  await sb.from('catalogue').delete().eq('id', id);
+  await loadCatalogue();
+  renderCat();
+}
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (session && !currentUser) {
+    currentUser = session.user;
+    await loadProfile();
+  }
+});
+</script>
+</body>
+</html>
